@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>نظام شهادات القيد - كلية تكنولوجيا العلوم الصحية التطبيقية</title>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root {
+    --primary: #1a3a5c;
+    --secondary: #c8a84b;
+    --text-dark: #1a202c;
+    --success: #276749;
+    --danger: #9b2335;
+    --warning: #c05621;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Cairo', sans-serif;
+    background: #e8e0d0;
+    color: var(--text-dark);
+    min-height: 100vh;
+  }
+
+  #control-panel {
+    background: var(--primary);
+    color: white;
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  }
+  #control-panel h1 { font-family: 'Amiri', serif; font-size: 1.3rem; color: var(--secondary); flex: 1; }
+  .ctrl-btn {
+    background: var(--secondary); color: #1a202c; border: none;
+    padding: 9px 18px; border-radius: 6px; font-family: 'Cairo', sans-serif;
+    font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; white-space: nowrap;
+  }
+  .ctrl-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
+  .ctrl-btn.secondary { background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.3); }
+  .ctrl-btn.secondary:hover { background: rgba(255,255,255,0.25); }
+  #script-url-display {
+    flex: 2; min-width: 280px; padding: 9px 14px; border-radius: 6px;
+    border: 2px solid var(--secondary); background: rgba(255,255,255,0.1);
+    color: white; font-family: 'Cairo', sans-serif; font-size: 0.82rem;
+    direction: ltr; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+
+  #stats-bar {
+    background: white; padding: 12px 24px; display: flex; gap: 24px;
+    align-items: center; border-bottom: 3px solid var(--secondary); flex-wrap: wrap;
+  }
+  .stat-item { text-align: center; }
+  .stat-num { font-size: 1.6rem; font-weight: 700; line-height: 1; }
+  .stat-label { font-size: 0.72rem; color: #666; }
+  .stat-total .stat-num { color: var(--primary); }
+  .stat-printed .stat-num { color: var(--success); }
+  .stat-pending .stat-num { color: var(--danger); }
+  #filter-tabs { margin-right: auto; display: flex; gap: 8px; }
+  .tab-btn {
+    padding: 6px 14px; border: 2px solid #ddd; border-radius: 20px;
+    background: white; cursor: pointer; font-family: 'Cairo', sans-serif; font-size: 0.8rem; transition: all 0.2s;
+  }
+  .tab-btn.active { border-color: var(--primary); background: var(--primary); color: white; }
+
+  #search-bar { background: white; padding: 10px 24px; border-bottom: 1px solid #ddd; }
+  #search-input {
+    width: 100%; max-width: 400px; padding: 8px 14px; border: 2px solid #ddd;
+    border-radius: 20px; font-family: 'Cairo', sans-serif; font-size: 0.9rem;
+  }
+  #search-input:focus { outline: none; border-color: var(--primary); }
+
+  #request-list { padding: 16px 24px; display: grid; gap: 10px; }
+  .request-card {
+    background: white; border-radius: 10px; padding: 14px 18px;
+    display: flex; align-items: center; gap: 12px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08); border-right: 5px solid #ddd; transition: all 0.2s;
+  }
+  .request-card:hover { box-shadow: 0 4px 14px rgba(0,0,0,0.15); transform: translateX(-2px); }
+  .request-card.printed { border-right-color: var(--success); background: #f0fff4; }
+  .request-card.pending { border-right-color: var(--danger); }
+  .request-num { font-size: 1.1rem; font-weight: 700; color: #aaa; min-width: 36px; text-align: center; }
+  .request-info { flex: 1; min-width: 0; }
+  .request-name { font-size: 1rem; font-weight: 700; color: var(--primary); }
+  .request-meta { font-size: 0.78rem; color: #666; margin-top: 2px; }
+  .request-meta span { margin-left: 12px; }
+  .print-status { font-size: 0.75rem; font-weight: 700; padding: 4px 10px; border-radius: 12px; white-space: nowrap; }
+  .status-printed { background: #c6f6d5; color: var(--success); }
+  .status-pending { background: #fed7d7; color: var(--danger); }
+  .card-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+  .card-print-btn {
+    background: var(--primary); color: white; border: none; padding: 7px 14px;
+    border-radius: 6px; font-family: 'Cairo', sans-serif; font-weight: 600;
+    font-size: 0.82rem; cursor: pointer; transition: all 0.2s; white-space: nowrap;
+  }
+  .card-print-btn:hover { background: #2c5282; }
+  .card-print-btn.reprinting { background: #718096; }
+  .card-delete-btn {
+    background: #fff5f5; color: var(--danger); border: 1.5px solid #feb2b2;
+    padding: 7px 12px; border-radius: 6px; font-family: 'Cairo', sans-serif;
+    font-weight: 600; font-size: 0.82rem; cursor: pointer; transition: all 0.2s; white-space: nowrap;
+  }
+  .card-delete-btn:hover { background: #fed7d7; border-color: var(--danger); }
+
+  #loading-msg, #empty-msg { text-align: center; padding: 60px 24px; color: #888; font-size: 1rem; }
+  .spinner {
+    width: 40px; height: 40px; border: 4px solid #ddd; border-top-color: var(--primary);
+    border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ===== PRINT OVERLAY ===== */
+  #print-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.75); z-index: 1000;
+    align-items: center; justify-content: center; padding: 20px;
+  }
+  #print-overlay.active { display: flex; }
+  #cert-wrapper {
+    background: white; width: 210mm; max-height: 92vh;
+    overflow-y: auto; border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); position: relative;
+  }
+  #cert-close-btn {
+    position: fixed; top: 16px; left: 16px; background: #e53e3e; color: white;
+    border: none; border-radius: 50%; width: 42px; height: 42px; font-size: 1.2rem;
+    cursor: pointer; z-index: 1001; box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  }
+  #cert-close-btn:hover { background: #c53030; }
+  #cert-print-now-btn {
+    position: fixed; top: 16px; right: 16px; background: var(--success); color: white;
+    border: none; padding: 11px 24px; border-radius: 8px; font-family: 'Cairo', sans-serif;
+    font-weight: 700; font-size: 1rem; cursor: pointer; z-index: 1001; box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  }
+  #cert-print-now-btn:hover { background: #1e5c3a; }
+  #cert-download-pdf-btn {
+    position: fixed; top: 16px; right: 175px; background: #c0392b; color: white;
+    border: none; padding: 11px 20px; border-radius: 8px; font-family: 'Cairo', sans-serif;
+    font-weight: 700; font-size: 1rem; cursor: pointer; z-index: 1001; box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  }
+  #cert-download-pdf-btn:hover { background: #a93226; }
+  #cert-download-word-btn {
+    position: fixed; top: 16px; right: 320px; background: #2980b9; color: white;
+    border: none; padding: 11px 20px; border-radius: 8px; font-family: 'Cairo', sans-serif;
+    font-weight: 700; font-size: 1rem; cursor: pointer; z-index: 1001; box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  }
+  #cert-download-word-btn:hover { background: #2471a3; }
+
+  /* ===== CERTIFICATE (SCREEN) ===== */
+  #certificate {
+    font-family: 'Amiri', serif;
+    padding: 18px 22px 20px;
+    direction: rtl;
+    color: #111;
+    background: white;
+  }
+  .cert-border {
+    border: 4px double var(--primary);
+    padding: 16px 20px 18px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Header */
+  .cert-header-table { width: 100%; border-collapse: collapse; }
+  .cert-header-table td { padding: 4px 8px; vertical-align: middle; }
+  .cert-header-table .logo-cell { width: 90px; }
+  .cert-logo-img { width: 82px; height: 82px; border-radius: 50%; object-fit: contain; display: block; margin: auto; }
+  .univ-name-ar { font-family: 'Amiri', serif; font-size: 1.55rem; font-weight: 700; color: var(--primary); line-height: 1.5; }
+  .univ-name-en { font-family: 'Cairo', sans-serif; font-size: 0.92rem; color: #666; }
+  .college-name-ar { font-family: 'Amiri', serif; font-size: 1.25rem; color: var(--primary); line-height: 1.6; margin-top: 3px; }
+  .college-name-en { font-family: 'Cairo', sans-serif; font-size: 0.86rem; color: #777; }
+  .cert-phone-col { font-size: 0.78rem; color: #555; line-height: 2; direction: ltr; text-align: right; font-family: 'Cairo', sans-serif; }
+
+  /* Dividers */
+  .divider-thick {
+    height: 3px;
+    background: linear-gradient(to right, transparent, var(--primary) 15%, var(--secondary) 50%, var(--primary) 85%, transparent);
+    margin: 8px 0; border-radius: 2px;
+  }
+  /* Ornamental single divider — replaces the double lines around the title */
+  .divider-ornament {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 10px 0;
+  }
+  .divider-ornament .orn-line {
+    flex: 1;
+    height: 1.5px;
+    background: linear-gradient(to right, transparent, var(--secondary), var(--primary));
+  }
+  .divider-ornament .orn-line.rev {
+    background: linear-gradient(to left, transparent, var(--secondary), var(--primary));
+  }
+  .divider-ornament .orn-diamond {
+    width: 8px; height: 8px;
+    background: var(--secondary);
+    transform: rotate(45deg);
+    flex-shrink: 0;
+  }
+  .divider-ornament .orn-dot {
+    width: 5px; height: 5px;
+    background: var(--primary);
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* Title */
+  .cert-title-wrap { text-align: center; margin: 12px 0 16px; }
+  .cert-title {
+    font-family: 'Amiri', serif; font-size: 2.5rem; font-weight: 700;
+    color: var(--primary); letter-spacing: 10px;
+    border-bottom: 2.5px solid var(--primary);
+    padding-bottom: 7px;
+    display: inline-block;
+  }
+
+  /* Body */
+  .cert-body {
+    font-size: 1.22rem;
+    line-height: 2.2;
+    padding: 10px 4px 0;
+    text-align: right;
+  }
+  .cert-intro { text-align: center; font-size: 1.2rem; color: #222; margin-bottom: 6px; }
+  .cert-student-name { font-size: 1.5rem; font-weight: 700; color: var(--primary); }
+
+  /* Field rows */
+  .cert-field-row { display: flex; gap: 40px; margin: 8px 0; flex-wrap: wrap; }
+  .cert-field { flex: 1; min-width: 180px; display: flex; gap: 6px; align-items: baseline; }
+  .cert-label { font-weight: 700; font-size: 1.12rem; white-space: nowrap; color: #222; }
+  .cert-value { font-size: 1.15rem; color: var(--primary); font-weight: 600; }
+
+  .cert-enrolled-text { font-size: 1.2rem; line-height: 2.3; margin: 18px 0 12px; text-align: right; }
+  .cert-enrolled-text strong { color: var(--primary); }
+
+  .cert-disclaimer { font-size: 1.05rem; color: #444; line-height: 2.1; text-align: justify; margin-top: 10px; }
+
+  .cert-request-to { font-size: 1.18rem; margin: 12px 0 8px; font-weight: 700; }
+  .cert-request-to span { color: var(--primary); font-weight: 600; }
+
+  .cert-date-row { text-align: left; font-size: 1.12rem; margin-top: 16px; font-weight: 600; }
+
+  /* Signatures */
+  .cert-signatures { display: flex; justify-content: space-between; margin-top: 32px; text-align: center; gap: 8px; }
+  .sig-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; min-height: 70px; }
+  .sig-title { font-size: 0.78rem; font-weight: 700; color: var(--primary); font-family: 'Cairo', sans-serif; line-height: 1.4; }
+  .sig-line { width: 100%; max-width: 110px; height: 0; border-bottom: 1.5px solid #888; flex-shrink: 0; }
+
+  /* Footer */
+  .cert-footer {
+    margin-top: 28px; padding-top: 10px; border-top: 2px solid var(--primary);
+    font-size: 0.9rem; color: #555; font-family: 'Cairo', sans-serif;
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px;
+  }
+
+  /* ===== MODALS ===== */
+  #delete-modal, #config-modal, #not-found-modal {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.55); z-index: 3000; align-items: center; justify-content: center;
+  }
+  #delete-modal.active, #config-modal.active, #not-found-modal.active { display: flex; }
+  #config-modal { z-index: 2000; }
+  #not-found-modal { z-index: 4000; }
+
+  .delete-modal-box {
+    background: white; border-radius: 14px; padding: 30px 28px 24px;
+    width: 90%; max-width: 420px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); text-align: center;
+  }
+  .delete-modal-icon { font-size: 3rem; margin-bottom: 12px; }
+  .delete-modal-box h3 { color: var(--danger); font-size: 1.2rem; margin-bottom: 10px; font-family: 'Amiri', serif; }
+  .delete-modal-box p { color: #555; font-size: 0.9rem; line-height: 1.7; margin-bottom: 20px; }
+  .delete-modal-name { font-weight: 700; color: var(--primary); font-size: 1rem; }
+  .delete-modal-actions { display: flex; gap: 12px; justify-content: center; }
+  .btn-confirm-delete {
+    background: var(--danger); color: white; border: none; padding: 10px 24px;
+    border-radius: 8px; font-family: 'Cairo', sans-serif; font-weight: 700; font-size: 0.95rem; cursor: pointer;
+  }
+  .btn-confirm-delete:hover { background: #7b1c2a; }
+  .btn-confirm-delete:disabled { background: #ccc; cursor: not-allowed; }
+  .btn-cancel-delete {
+    background: #eee; color: #444; border: none; padding: 10px 24px;
+    border-radius: 8px; font-family: 'Cairo', sans-serif; font-weight: 700; font-size: 0.95rem; cursor: pointer;
+  }
+  .btn-cancel-delete:hover { background: #ddd; }
+
+  .modal-box { background: white; border-radius: 12px; padding: 28px; width: 90%; max-width: 520px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+  .modal-box h2 { color: var(--primary); margin-bottom: 16px; font-family: 'Amiri', serif; }
+  .modal-field { margin-bottom: 14px; }
+  .modal-field label { display: block; font-size: 0.85rem; font-weight: 700; margin-bottom: 6px; color: #444; }
+  .modal-field input { width: 100%; padding: 9px 12px; border: 2px solid #ddd; border-radius: 6px; font-family: 'Cairo', sans-serif; font-size: 0.9rem; direction: ltr; }
+  .modal-field input:focus { outline: none; border-color: var(--primary); }
+  .modal-note { font-size: 0.78rem; color: #888; margin-top: 4px; }
+  .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+
+  .not-found-box {
+    background: white; border-radius: 16px; padding: 36px 32px 28px;
+    width: 90%; max-width: 460px; box-shadow: 0 24px 70px rgba(0,0,0,0.35);
+    text-align: center; border-top: 6px solid var(--warning); animation: popIn 0.25s ease;
+  }
+  @keyframes popIn { from { transform: scale(0.85); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .not-found-icon { font-size: 3.2rem; margin-bottom: 14px; display: block; }
+  .not-found-box h3 { color: var(--warning); font-size: 1.25rem; margin-bottom: 10px; font-family: 'Amiri', serif; }
+  .not-found-box .nf-name { font-size: 1.1rem; font-weight: 700; color: var(--primary); background: #fef3e2; border: 1.5px solid #f6c76a; border-radius: 8px; padding: 8px 18px; display: inline-block; margin: 8px 0 14px; }
+  .not-found-box .nf-nid { font-size: 0.82rem; color: #888; direction: ltr; display: block; margin-bottom: 10px; }
+  .not-found-box p { color: #666; font-size: 0.92rem; line-height: 1.8; margin-bottom: 22px; }
+  .btn-nf-close { background: var(--primary); color: white; border: none; padding: 11px 32px; border-radius: 8px; font-family: 'Cairo', sans-serif; font-weight: 700; font-size: 0.95rem; cursor: pointer; }
+  .btn-nf-close:hover { background: #2c5282; }
+
+  #toast {
+    position: fixed; bottom: 30px; left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: #2d3748; color: white; padding: 12px 24px; border-radius: 30px;
+    font-family: 'Cairo', sans-serif; font-size: 0.9rem; font-weight: 600;
+    z-index: 9999; transition: transform 0.3s ease; white-space: nowrap; pointer-events: none;
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); }
+  #toast.success { background: var(--success); }
+  #toast.error { background: var(--danger); }
+
+  /* ============================================================
+     PRINT — A4 Professional, fills the page, no boxes/underlines
+     ============================================================ */
+  @page {
+    size: A4 portrait;
+    margin: 14mm 15mm 14mm 15mm;
+  }
+
+  @media print {
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+
+    body > *:not(#print-overlay) { display: none !important; }
+
+    #print-overlay {
+      display: block !important;
+      position: static !important;
+      background: white !important;
+      padding: 0 !important; margin: 0 !important;
+      width: 100% !important; height: auto !important;
+      overflow: visible !important;
+    }
+    #cert-wrapper {
+      width: 100% !important; max-height: none !important;
+      overflow: visible !important; box-shadow: none !important;
+      border-radius: 0 !important; background: white !important;
+    }
+    #cert-close-btn, #cert-print-now-btn, #cert-download-pdf-btn, #cert-download-word-btn { display: none !important; }
+
+    /* Certificate container */
+    #certificate {
+      font-family: 'Amiri', serif !important;
+      padding: 0 !important;
+      color: #000 !important;
+      background: white !important;
+      width: 100% !important;
+      /* Force it to fill the A4 printable area height */
+      min-height: 245mm !important;
+      display: flex !important;
+      flex-direction: column !important;
+    }
+
+    .cert-border {
+      border: 3.5pt double #1a3a5c !important;
+      padding: 12pt 16pt 14pt !important;
+      flex: 1 !important;
+      display: flex !important;
+      flex-direction: column !important;
+      min-height: 243mm !important;
+    }
+
+    /* --- Header --- */
+    .cert-header-table td { padding: 4pt 6pt !important; }
+    .cert-logo-img { width: 68pt !important; height: 68pt !important; }
+    .univ-name-ar  { font-size: 15pt !important; line-height: 1.45 !important; }
+    .univ-name-en  { font-size: 9pt  !important; }
+    .college-name-ar { font-size: 12.5pt !important; line-height: 1.5 !important; margin-top: 3pt !important; }
+    .college-name-en { font-size: 8pt !important; }
+    .cert-phone-col  { font-size: 7.5pt !important; line-height: 1.9 !important; }
+
+    /* --- Dividers --- */
+    .divider-thick {
+      height: 2.2pt !important; margin: 7pt 0 !important;
+      background: linear-gradient(to right, transparent, #1a3a5c 15%, #c8a84b 50%, #1a3a5c 85%, transparent) !important;
+    }
+    .divider-ornament { margin: 8pt 0 !important; }
+    .divider-ornament .orn-line { height: 1pt !important; }
+    .divider-ornament .orn-diamond { width: 7pt !important; height: 7pt !important; }
+    .divider-ornament .orn-dot { width: 4pt !important; height: 4pt !important; }
+
+    /* --- Title --- */
+    .cert-title-wrap { margin: 14pt 0 14pt !important; }
+    .cert-title { font-size: 26pt !important; letter-spacing: 10pt !important; color: #1a3a5c !important; }
+
+    /* --- Body grows to fill remaining space --- */
+    .cert-body {
+      font-size: 13pt !important;
+      line-height: 2.15 !important;
+      padding: 0 !important;
+      flex: 1 !important;
+      display: flex !important;
+      flex-direction: column !important;
+      justify-content: space-between !important;
+    }
+
+    /* Content block (everything except signatures+footer) */
+    .cert-body-content { flex: 1 !important; }
+
+    .cert-intro { font-size: 13pt !important; line-height: 2.2 !important; margin-bottom: 4pt !important; text-align: center !important; }
+    .cert-student-name { font-size: 16pt !important; }
+
+    /* Field rows */
+    .cert-field-row { gap: 30pt !important; margin: 10pt 0 !important; }
+    .cert-field { min-width: 140pt !important; gap: 5pt !important; }
+    .cert-label { font-size: 12.5pt !important; }
+    .cert-value  { font-size: 12.5pt !important; }
+
+    /* Enrolled */
+    .cert-enrolled-text {
+      font-size: 13pt !important;
+      line-height: 2.3 !important;
+      margin: 22pt 0 18pt !important;
+    }
+
+    /* Disclaimer */
+    .cert-disclaimer {
+      font-size: 11pt !important;
+      line-height: 2 !important;
+      margin-top: 14pt !important;
+    }
+
+    /* Request to */
+    .cert-request-to { font-size: 13pt !important; margin: 18pt 0 10pt !important; }
+
+    /* Date */
+    .cert-date-row { font-size: 12pt !important; margin-top: 18pt !important; text-align: left !important; }
+
+    /* Signatures — pushed toward bottom */
+    .cert-signatures { margin-top: 36pt !important; gap: 20pt !important; }
+    .sig-title { font-size: 11pt !important; }
+    .sig-line   { width: 120pt !important; height: 48pt !important; border-bottom: 1pt solid #555 !important; }
+
+    /* Footer */
+    .cert-footer {
+      margin-top: 18pt !important;
+      padding-top: 8pt !important;
+      border-top: 1.5pt solid #1a3a5c !important;
+      font-size: 8.5pt !important;
+    }
+  }
+
+  @media (max-width: 600px) {
+    #control-panel { gap: 10px; }
+    #script-url-display { min-width: 100%; }
+    .request-card { flex-wrap: wrap; }
+    #cert-wrapper { width: 98vw; }
+    .card-actions { width: 100%; justify-content: flex-end; }
+  }
+</style>
+</head>
+<body>
+
+<div id="control-panel">
+  <h1>🎓 نظام شهادات القيد</h1>
+  <div id="script-url-display">لم يتم تعيين الرابط بعد</div>
+  <button class="ctrl-btn" onclick="loadRequests()">📥 تحميل الطلبات</button>
+  <button class="ctrl-btn secondary" onclick="openConfig()">⚙️ إعدادات</button>
+</div>
+
+<div id="stats-bar">
+  <div class="stat-item stat-total"><div class="stat-num" id="stat-total">0</div><div class="stat-label">إجمالي الطلبات</div></div>
+  <div class="stat-item stat-printed"><div class="stat-num" id="stat-printed">0</div><div class="stat-label">تم الطباعة ✅</div></div>
+  <div class="stat-item stat-pending"><div class="stat-num" id="stat-pending">0</div><div class="stat-label">لم يطبع بعد ⏳</div></div>
+  <div id="filter-tabs">
+    <button class="tab-btn active" onclick="setFilter('all',this)">الكل</button>
+    <button class="tab-btn" onclick="setFilter('pending',this)">لم يطبع</button>
+    <button class="tab-btn" onclick="setFilter('printed',this)">تم الطباعة</button>
+  </div>
+</div>
+
+<div id="search-bar">
+  <input type="text" id="search-input" placeholder="🔍 ابحث باسم الطالب أو الرقم القومي..." oninput="renderList()" />
+</div>
+
+<div id="request-list">
+  <div id="empty-msg">
+    <div style="font-size:3rem;margin-bottom:12px">📋</div>
+    <div>اضغط "⚙️ إعدادات" لإدخال رابط Google Apps Script</div>
+    <div style="margin-top:8px;font-size:0.85rem;color:#aaa">تأكد من نشر السكربت كـ Web App</div>
+  </div>
+</div>
+
+<!-- Print Overlay -->
+<div id="print-overlay">
+  <button id="cert-close-btn" onclick="closePrint()">✕</button>
+  <button id="cert-print-now-btn" onclick="doPrint()">🖨️ طباعة</button>
+  <button id="cert-download-pdf-btn" onclick="downloadPDF()">⬇️ PDF</button>
+  <button id="cert-download-word-btn" onclick="downloadWord()">⬇️ Word</button>
+  <div id="cert-wrapper">
+    <div id="certificate"></div>
+  </div>
+</div>
+
+<!-- Not Found Modal -->
+<div id="not-found-modal">
+  <div class="not-found-box">
+    <span class="not-found-icon">⚠️</span>
+    <h3>الطالب غير مدرج في قاعدة البيانات</h3>
+    <div class="nf-name" id="nf-student-name"></div>
+    <span class="nf-nid" id="nf-student-nid"></span>
+    <p>هذا الاسم <strong>غير مدرج بقاعدة بيانات المستويات الدراسية</strong>.<br>يرجى التحقق من تسجيل الطالب في الشيت الثاني<br>قبل إصدار شهادة القيد.</p>
+    <button class="btn-nf-close" onclick="closeNotFoundModal()">حسناً، فهمت</button>
+  </div>
+</div>
+
+<!-- Delete Modal -->
+<div id="delete-modal">
+  <div class="delete-modal-box">
+    <div class="delete-modal-icon">🗑️</div>
+    <h3>تأكيد حذف الطلب</h3>
+    <p>هل أنت متأكد من حذف طلب الطالب<br><span class="delete-modal-name" id="delete-student-name"></span><br><span style="font-size:0.82rem;color:#888;" id="delete-student-nid"></span><br><br><span style="color:var(--danger);font-weight:700;">⚠️ لا يمكن التراجع عن هذا الإجراء</span></p>
+    <div class="delete-modal-actions">
+      <button class="btn-confirm-delete" id="btn-confirm-delete" onclick="confirmDelete()">🗑️ نعم، احذف</button>
+      <button class="btn-cancel-delete" onclick="closeDeleteModal()">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<!-- Config Modal -->
+<div id="config-modal">
+  <div class="modal-box">
+    <h2>⚙️ إعدادات الاتصال</h2>
+    <div class="modal-field">
+      <label>رابط Google Apps Script (Web App)</label>
+      <input type="text" id="cfg-script-url" placeholder="https://script.google.com/macros/s/..." />
+      <div class="modal-note">انسخ الرابط من: Deploy → Manage deployments → Web app</div>
+    </div>
+    <div class="modal-actions">
+      <button class="ctrl-btn" onclick="saveConfig()">💾 حفظ</button>
+      <button class="ctrl-btn secondary" onclick="closeConfig()">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const HARDCODED_URL = 'https://script.google.com/macros/s/AKfycbyhRx38vZyldIk00h9qMS4RamIhw5SIzLBDANzJqQv0AIkoRPfrVRh0r1N48-62ds7d/exec';
+const DEFAULT_CONFIG = { scriptUrl: HARDCODED_URL };
+let config = JSON.parse(localStorage.getItem('cert_config') || 'null') || {...DEFAULT_CONFIG};
+let requests = [], studentDataCache = {}, currentFilter = 'all';
+let currentRequest = null, currentStudentData = null, pendingDeleteNid = null;
+
+function init() { updateUrlDisplay(); loadRequests(); }
+
+function updateUrlDisplay() {
+  const d = document.getElementById('script-url-display');
+  if (config.scriptUrl) { d.textContent = config.scriptUrl; d.style.color = '#c8a84b'; }
+  else { d.textContent = 'لم يتم تعيين الرابط بعد - اضغط "إعدادات"'; d.style.color = '#fed7d7'; }
+}
+
+function showToast(msg, type='success', dur=3000) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = `show ${type}`;
+  setTimeout(() => { t.className=''; }, dur);
+}
+
+async function loadRequests() {
+  if (!config.scriptUrl) { alert('من فضلك اضبط رابط Google Apps Script أولاً'); openConfig(); return; }
+  document.getElementById('request-list').innerHTML = `<div id="loading-msg"><div class="spinner"></div>جاري تحميل الطلبات...</div>`;
+  try {
+    const res = await fetch(config.scriptUrl + '?action=getRequests');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    requests = await res.json();
+    updateStats(); renderList();
+  } catch(err) {
+    document.getElementById('request-list').innerHTML = `<div id="empty-msg" style="color:#e53e3e">❌ خطأ في تحميل البيانات<br><small style="color:#aaa">${err.message}</small></div>`;
+  }
+}
+
+async function getStudentData(nid) {
+  if (studentDataCache[nid]) return studentDataCache[nid];
+  try {
+    const res = await fetch(config.scriptUrl + '?action=getStudent&nid=' + encodeURIComponent(nid));
+    if (!res.ok) throw new Error('failed');
+    const data = await res.json();
+    studentDataCache[nid] = data;
+    return data;
+  } catch { return null; }
+}
+
+function openNotFoundModal(name, nid) {
+  document.getElementById('nf-student-name').textContent = name || 'غير معروف';
+  document.getElementById('nf-student-nid').textContent = 'الرقم القومي: ' + (nid || '');
+  document.getElementById('not-found-modal').classList.add('active');
+}
+function closeNotFoundModal() { document.getElementById('not-found-modal').classList.remove('active'); }
+
+function openDeleteModal(nid) {
+  const req = requests.find(r => r.national_id === nid);
+  if (!req) return;
+  pendingDeleteNid = nid;
+  document.getElementById('delete-student-name').textContent = req.name || '';
+  document.getElementById('delete-student-nid').textContent = 'الرقم القومي: ' + nid;
+  const btn = document.getElementById('btn-confirm-delete');
+  btn.disabled = false; btn.textContent = '🗑️ نعم، احذف';
+  document.getElementById('delete-modal').classList.add('active');
+}
+function closeDeleteModal() { pendingDeleteNid = null; document.getElementById('delete-modal').classList.remove('active'); }
+
+async function confirmDelete() {
+  if (!pendingDeleteNid) return;
+  const btn = document.getElementById('btn-confirm-delete');
+  btn.disabled = true; btn.textContent = '⏳ جاري الحذف...';
+  try {
+    const res = await fetch(config.scriptUrl + '?action=deleteRequest&nid=' + encodeURIComponent(pendingDeleteNid));
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const result = await res.json();
+    if (result.success) {
+      requests = requests.filter(r => r.national_id !== pendingDeleteNid);
+      delete studentDataCache[pendingDeleteNid];
+      closeDeleteModal(); updateStats(); renderList();
+      showToast('✅ تم حذف الطلب بنجاح');
+    } else { btn.disabled = false; btn.textContent = '🗑️ نعم، احذف'; showToast('❌ ' + (result.message||'فشل الحذف'), 'error'); }
+  } catch(err) { btn.disabled = false; btn.textContent = '🗑️ نعم، احذف'; showToast('❌ ' + err.message, 'error'); }
+}
+
+function isPrinted(req) { const s=(req.print_status||'').trim(); return s!==''&&s!=='لم يطبع'; }
+
+function renderList() {
+  const listEl = document.getElementById('request-list');
+  const search = document.getElementById('search-input').value.trim().toLowerCase();
+  let filtered = requests.filter(req => {
+    const name=(req.name||'').toLowerCase(), nid=(req.national_id||'').toLowerCase();
+    const matchSearch = !search || name.includes(search) || nid.includes(search);
+    const printed = isPrinted(req);
+    const matchFilter = currentFilter==='all' || (currentFilter==='printed'&&printed) || (currentFilter==='pending'&&!printed);
+    return matchSearch && matchFilter && req.national_id;
+  });
+  if (!filtered.length) { listEl.innerHTML=`<div id="empty-msg">لا توجد نتائج</div>`; return; }
+  filtered = filtered.reverse();
+  listEl.innerHTML = filtered.map((req,i) => {
+    const nid=req.national_id||'', name=req.name||'', service=req.service||'', inst=req.request_institution||'';
+    const printed=isPrinted(req);
+
+    // العمود الأول في الشيت — بيجي عادةً بأي اسم من دول
+    const rawDate = req.timestamp || req.Timestamp || req.date || req.Date
+                  || req.submission_date || req.request_date || req.time
+                  || req.created_at || req.وقت || req.التاريخ || '';
+
+    let dateDisplay = '';
+    if (rawDate) {
+      try {
+        const d = new Date(rawDate);
+        if (!isNaN(d)) {
+          const hh   = d.getHours().toString().padStart(2,'0');
+          const mm   = d.getMinutes().toString().padStart(2,'0');
+          const day  = d.getDate().toString().padStart(2,'0');
+          const mon  = (d.getMonth()+1).toString().padStart(2,'0');
+          const yr   = d.getFullYear();
+          dateDisplay = `<span style="color:#555;">${hh}:${mm}  ${day}/${mon}/${yr}</span>`;
+        } else {
+          // لو مش تاريخ قابل للتحويل، اعرضه كما هو
+          dateDisplay = `<span style="color:#555;">${rawDate}</span>`;
+        }
+      } catch(e) {
+        dateDisplay = `<span style="color:#555;">${rawDate}</span>`;
+      }
+    }
+
+    return `<div class="request-card ${printed?'printed':'pending'}">
+      <div class="request-num">${i+1}</div>
+      <div class="request-info">
+        <div class="request-name">${name}</div>
+        <div class="request-meta"><span>🪪 ${nid}</span><span>📋 ${service}</span><span>🏢 ${inst}</span></div>
+        ${dateDisplay ? `<div style="font-size:0.75rem;margin-top:3px;">${dateDisplay}</div>` : ''}
+        ${printed?`<div style="font-size:0.72rem;color:var(--success);margin-top:3px">✅ ${req.print_status}</div>`:''}
+      </div>
+      <span class="print-status ${printed?'status-printed':'status-pending'}">${printed?'✅ تم':'⏳ لم يطبع'}</span>
+      <div class="card-actions">
+        <button class="card-print-btn ${printed?'reprinting':''}" onclick="openCertificate('${nid}')">${printed?'🔁 إعادة طباعة':'🖨️ طباعة'}</button>
+        <button class="card-delete-btn" onclick="openDeleteModal('${nid}')">🗑️ حذف</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function updateStats() {
+  const total=requests.filter(r=>r.national_id).length;
+  const printed=requests.filter(r=>r.national_id&&isPrinted(r)).length;
+  document.getElementById('stat-total').textContent=total;
+  document.getElementById('stat-printed').textContent=printed;
+  document.getElementById('stat-pending').textContent=total-printed;
+}
+
+function setFilter(f,btn) {
+  currentFilter=f;
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active'); renderList();
+}
+
+async function openCertificate(nationalId) {
+  currentRequest = requests.find(r=>r.national_id===nationalId);
+  if (!currentRequest) return;
+
+  const studentData = await getStudentData(nationalId);
+  if (!studentData || studentData.error || !Object.keys(studentData).length) {
+    openNotFoundModal(currentRequest.name, nationalId);
+    currentRequest = null; return;
+  }
+  currentStudentData = studentData;
+
+  const gender = (currentRequest.gender||'').trim();
+  let studentLabel = gender==='ذكر' ? 'الطالب' : gender==='أنثى' ? 'الطالبة' : 'الطالب / الطالبة';
+
+  const name        = currentRequest.name || '';
+  const birthPlace  = currentRequest.birth_place || '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+  const rawBirthDate = currentRequest.birth_date || '';
+  // استخراج التاريخ فقط (أرقام وفواصل / - .) وتجاهل أي حروف أو نص إضافي
+  const birthDateMatch = rawBirthDate.match(/\d{1,4}[\/-]\d{1,2}[\/-]\d{2,4}|\d{1,2}\s*\/\s*\d{1,2}\s*\/\s*\d{2,4}|\d{4}/);
+  const birthDate = birthDateMatch ? birthDateMatch[0].trim() : (rawBirthDate.replace(/[^\d\/ \-\.]/g, '').trim() || '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;');
+  const institution = currentRequest.request_institution || '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+  const level       = studentData.level         || '';
+  const dept        = studentData.department    || '';
+  const study       = studentData.study_system  || '';
+  const year        = studentData.academic_year || '2025 / 2026';
+
+  const today   = new Date();
+  const dateStr = `${today.getDate().toString().padStart(2,'0')} / ${(today.getMonth()+1).toString().padStart(2,'0')} / ${today.getFullYear()}`;
+
+  document.getElementById('certificate').innerHTML = `
+    <div class="cert-border">
+
+      <table class="cert-header-table">
+        <tr>
+          <td class="logo-cell" style="text-align:center;">
+            <img src="https://upload.wikimedia.org/wikipedia/ar/7/79/%D8%B4%D8%B9%D8%A7%D8%B1_%D8%AC%D8%A7%D9%85%D8%B9%D8%A9_%D8%A8%D9%86%D9%8A_%D8%B3%D9%88%D9%8A%D9%81.png"
+                 alt="شعار" class="cert-logo-img" crossorigin="anonymous"/>
+          </td>
+          <td style="text-align:center;">
+            <div class="univ-name-ar">جـامعـة بـني سـويـف</div>
+            <div class="univ-name-en">Beni-Suef University</div>
+            <div class="college-name-ar">كليـة تكنولوجيا العلوم الصحية التطبيقية</div>
+            <div class="college-name-en">Faculty of Applied Health Sciences Technology</div>
+          </td>
+          <td class="logo-cell">
+            <div class="cert-phone-col">هاتف / Tel:<br>(082) 2247881<br>(082) 2247882<br>(082) 2247883<br>(082) 2247884</div>
+          </td>
+        </tr>
+      </table>
+
+      <div class="divider-ornament">
+        <div class="orn-line rev"></div>
+        <div class="orn-dot"></div>
+        <div class="orn-diamond"></div>
+        <div class="orn-dot"></div>
+        <div class="orn-line rev"></div>
+        <div class="orn-dot"></div>
+        <div class="orn-diamond"></div>
+        <div class="orn-dot"></div>
+        <div class="orn-line"></div>
+      </div>
+
+      <div class="cert-title-wrap">
+        <span class="cert-title">شـهـادة قـيـد</span>
+      </div>
+
+      <div class="cert-body">
+        <div class="cert-body-content">
+
+          <div class="cert-intro">تُشهد كلية تكنولوجيا العلوم الصحية التطبيقية – جامعة بني سويف</div>
+          <div class="cert-intro">بأن ${studentLabel} / <span class="cert-student-name">${name}</span></div>
+
+          <div class="cert-field-row" style="margin-top:16px;">
+            <div class="cert-field">
+              <span class="cert-label">محل الميلاد :</span>
+              <span class="cert-value">${birthPlace}</span>
+            </div>
+            <div class="cert-field">
+              <span class="cert-label">بتاريخ :</span>
+              <span class="cert-value">${birthDate}</span>
+            </div>
+          </div>
+
+          <div class="cert-field-row">
+            <div class="cert-field">
+              <span class="cert-label">الرقم القومي :</span>
+              <span class="cert-value" style="direction:ltr;text-align:left;">${nationalId}</span>
+            </div>
+            <div class="cert-field">
+              <span class="cert-label">نظام الدراسة :</span>
+              <span class="cert-value">${study}</span>
+            </div>
+          </div>
+
+          <div class="cert-enrolled-text">
+            مقيد / ة بـ <strong>${level}</strong> &ndash; ${study} &ndash;
+            <strong>${dept}</strong> &ndash;
+            كلية تكنولوجيا العلوم الصحية التطبيقية
+            بنظام الساعات المعتمدة – جامعة بني سويف
+            للعام الجامعي <strong>( ${year} )</strong> م
+          </div>
+
+          <div class="cert-disclaimer">
+            وأُعطيت هذه الشهادة بناءً على الطلب المقدم منه / منها دون أدنى مسؤولية على الكلية بما ورد بها وحقوق الغير.
+          </div>
+
+          <div class="cert-request-to">
+            وذلك لتقديمها إلى : &nbsp;<span>${institution}</span>
+          </div>
+
+          <div class="cert-date-row">
+            تحريراً في : &nbsp;<strong>${dateStr}</strong>
+          </div>
+
+        </div><!-- /cert-body-content -->
+
+        <div class="cert-signatures">
+          <div class="sig-item">
+            <div class="sig-title">المختص</div>
+            <div class="sig-line"></div>
+          </div>
+          <div class="sig-item">
+            <div class="sig-title">مدير شئون الطلاب</div>
+            <div class="sig-line"></div>
+          </div>
+          <div class="sig-item">
+            <div class="sig-title">وكيل الكلية لشئون التعليم والطلاب</div>
+            <div class="sig-line"></div>
+          </div>
+          <div class="sig-item">
+            <div class="sig-title">عميد الكلية</div>
+            <div class="sig-line"></div>
+          </div>
+        </div>
+
+      </div><!-- /cert-body -->
+
+      <div class="cert-footer">
+        <span>جامعة بني سويف &nbsp;|&nbsp; Beni–Suef University</span>
+        <span>www.healthsc.bsu.edu.eg</span>
+        <span>مدينة بني سويف الجديدة – New Beni-Suef City</span>
+      </div>
+
+    </div>`;
+
+  document.getElementById('print-overlay').classList.add('active');
+}
+
+function closePrint() {
+  document.getElementById('print-overlay').classList.remove('active');
+  currentRequest = null; currentStudentData = null;
+}
+
+async function doPrint() {
+  if (!currentRequest) return;
+  try {
+    const res = await fetch(config.scriptUrl + '?action=markPrinted&nid=' + encodeURIComponent(currentRequest.national_id));
+    const result = await res.json();
+    if (!result.success) showToast('⚠️ تم الطباعة لكن لم يتم تحديث الحالة','error');
+  } catch(err) { showToast('⚠️ فشل تحديث الحالة: '+err.message,'error'); }
+  window.print();
+  setTimeout(() => { loadRequests(); closePrint(); }, 1500);
+}
+
+async function downloadPDF() {
+  if (!currentRequest) return;
+  showToast('⏳ جاري إنشاء ملف PDF...', 'success', 5000);
+  try {
+    const { jsPDF } = window.jspdf;
+    const certEl = document.getElementById('certificate');
+
+    // انتظر تحميل الخطوط العربية قبل الالتقاط
+    await document.fonts.ready;
+    // تأخير إضافي لضمان رسم الخطوط
+    await new Promise(r => setTimeout(r, 600));
+
+    const canvas = await html2canvas(certEl, {
+      scale: 3,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#ffffff',
+      logging: false,
+      windowWidth: certEl.scrollWidth,
+      windowHeight: certEl.scrollHeight,
+      foreignObjectRendering: false,
+      imageTimeout: 15000,
+      onclone: (clonedDoc) => {
+        // تأكد إن الخطوط متطبقة في النسخة المستنسخة
+        const clonedCert = clonedDoc.getElementById('certificate');
+        if (clonedCert) {
+          clonedCert.style.fontFamily = "'Amiri', serif";
+          clonedCert.style.direction = 'rtl';
+        }
+      }
+    });
+
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
+    const margin = 10;
+    const imgW = pageW - margin * 2;
+    const imgH = (canvas.height * imgW) / canvas.width;
+    const finalH = Math.min(imgH, pageH - margin * 2);
+    pdf.addImage(imgData, 'PNG', margin, margin, imgW, finalH);
+    const fileName = 'شهادة_قيد_' + (currentRequest.name || 'طالب').replace(/\s+/g, '_') + '.pdf';
+    pdf.save(fileName);
+    showToast('✅ تم تنزيل PDF بنجاح');
+  } catch(err) {
+    showToast('❌ فشل إنشاء PDF: ' + err.message, 'error');
+  }
+}
+
+async function downloadWord() {
+  if (!currentRequest) return;
+  showToast('⏳ جاري إنشاء ملف Word...', 'success', 4000);
+  try {
+    const certEl = document.getElementById('certificate');
+    // Get all styles needed
+    const styles = Array.from(document.styleSheets)
+      .map(s => { try { return Array.from(s.cssRules).map(r=>r.cssText).join('\n'); } catch(e){return '';} })
+      .join('\n');
+
+    const htmlContent = `
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+<!--[if gte mso 9]>
+<xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom><w:DoNotOptimizeForBrowser/></w:WordDocument></xml>
+<![endif]-->
+<style>
+  @page { size: A4; margin: 1.5cm; }
+  body { font-family: 'Amiri', serif; direction: rtl; background: white; margin: 0; padding: 0; }
+  ${styles}
+  /* override for word */
+  #print-overlay, #cert-wrapper { display: block !important; position: static !important; background: white !important; padding: 0 !important; box-shadow: none !important; border-radius: 0 !important; width: 100% !important; }
+  #cert-close-btn, #cert-print-now-btn, #cert-download-pdf-btn, #cert-download-word-btn { display: none !important; }
+</style>
+</head>
+<body>
+${certEl.outerHTML}
+</body>
+</html>`;
+
+    const blob = new Blob(['\ufeff', htmlContent], { type: 'application/msword;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'شهادة_قيد_' + (currentRequest.name||'طالب').replace(/\s+/g,'_') + '.doc';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('✅ تم تنزيل ملف Word بنجاح');
+  } catch(err) {
+    showToast('❌ فشل إنشاء Word: ' + err.message, 'error');
+    console.error(err);
+  }
+}
+
+function openConfig() { document.getElementById('cfg-script-url').value=config.scriptUrl||''; document.getElementById('config-modal').classList.add('active'); }
+function saveConfig() {
+  config.scriptUrl = document.getElementById('cfg-script-url').value.trim();
+  localStorage.setItem('cert_config', JSON.stringify(config));
+  updateUrlDisplay(); closeConfig();
+  if (config.scriptUrl) loadRequests();
+}
+function closeConfig() { document.getElementById('config-modal').classList.remove('active'); }
+
+document.getElementById('config-modal').addEventListener('click',function(e){if(e.target===this)closeConfig();});
+document.getElementById('print-overlay').addEventListener('click',function(e){if(e.target===this)closePrint();});
+document.getElementById('delete-modal').addEventListener('click',function(e){if(e.target===this)closeDeleteModal();});
+document.getElementById('not-found-modal').addEventListener('click',function(e){if(e.target===this)closeNotFoundModal();});
+
+init();
+</script>
+</body>
+</html>
