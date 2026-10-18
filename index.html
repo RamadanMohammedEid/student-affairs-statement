@@ -800,10 +800,14 @@ async function openCertificate(nationalId, rowIndex) {
   currentRequest = requests.find(r => rowIndex ? r.row_index===rowIndex : r.national_id===nationalId);
   if (!currentRequest) return;
 
-  const studentData = await getStudentData(nationalId);
+  let studentData = await getStudentData(nationalId);
   if (!studentData || studentData.error || !Object.keys(studentData).length) {
-    openNotFoundModal(currentRequest.name, nationalId);
-    currentRequest = null; return;
+    // الطالب مش في الشيت الثاني → نكمل بالبيانات المسجلة في الطلب نفسه
+    studentData = {
+      level: currentRequest.level, department: currentRequest.department,
+      study_system: currentRequest.study_system, academic_year: ''
+    };
+    showToast('⚠️ الطالب غير مدرج في الشيت الثاني — تم استخدام بيانات الطلب', 'error', 4500);
   }
   currentStudentData = studentData;
 
@@ -817,9 +821,9 @@ async function openCertificate(nationalId, rowIndex) {
   const birthDateMatch = rawBirthDate.match(/\d{1,4}[\/-]\d{1,2}[\/-]\d{2,4}|\d{1,2}\s*\/\s*\d{1,2}\s*\/\s*\d{2,4}|\d{4}/);
   const birthDate = birthDateMatch ? birthDateMatch[0].trim() : (rawBirthDate.replace(/[^\d\/ \-\.]/g, '').trim() || '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;');
   const institution = currentRequest.request_institution || '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
-  const level       = studentData.level         || '';
-  const dept        = studentData.department    || '';
-  const study       = studentData.study_system  || '';
+  const level       = studentData.level         || currentRequest.level        || '';
+  const dept        = studentData.department    || currentRequest.department   || '';
+  const study       = studentData.study_system  || currentRequest.study_system || '';
   const year        = studentData.academic_year || '2025 / 2026';
 
   const today   = new Date();
@@ -1185,7 +1189,7 @@ function renderDetails() {
 
   let html = '';
   if (!detailsStudent) {
-    html += `<div class="details-warn">⚠️ هذا الطالب <strong>غير مدرج في الشيت الثاني</strong> (بيانات المستويات)، لذلك لن تُطبع له شهادة قبل إضافته. المعروض في الدراسة هو ما سُجل في الطلب نفسه.</div>`;
+    html += `<div class="details-warn">⚠️ هذا الطالب <strong>غير مدرج في الشيت الثاني</strong> (بيانات المستويات)، ويمكنك طباعة الشهادة بالبيانات المسجلة في الطلب نفسه (عدّلها من هنا عند الحاجة).</div>`;
   }
   DETAIL_SECTIONS.forEach(sec => {
     const fields = sec.fields.filter(f => !(f.studentOnly && !detailsStudent));
