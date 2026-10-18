@@ -260,6 +260,83 @@
     display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px;
   }
 
+  /* ===== DETAILS / EDIT MODAL ===== */
+  .card-view-btn, .card-edit-btn {
+    border: 1.5px solid; padding: 7px 12px; border-radius: 6px; font-family: 'Cairo', sans-serif;
+    font-weight: 600; font-size: 0.82rem; cursor: pointer; transition: all 0.2s; white-space: nowrap;
+  }
+  .card-view-btn { background: #ebf4ff; color: #2c5282; border-color: #bee3f8; }
+  .card-view-btn:hover { background: #bee3f8; border-color: #2c5282; }
+  .card-edit-btn { background: #fffaf0; color: var(--warning); border-color: #fbd38d; }
+  .card-edit-btn:hover { background: #feebc8; border-color: var(--warning); }
+  .card-actions { flex-wrap: wrap; }
+  .request-info { cursor: pointer; }
+
+  #details-modal {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+    z-index: 2500; align-items: center; justify-content: center; padding: 14px;
+  }
+  #details-modal.active { display: flex; }
+  .details-box {
+    background: white; border-radius: 14px; width: 100%; max-width: 760px; max-height: 94vh;
+    display: flex; flex-direction: column; box-shadow: 0 24px 70px rgba(0,0,0,0.4); overflow: hidden;
+    animation: popIn 0.2s ease;
+  }
+  .details-head {
+    padding: 16px 22px; border-bottom: 3px solid var(--secondary);
+    display: flex; align-items: center; gap: 12px; background: #f9f6ee;
+  }
+  .details-head h2 { font-family: 'Amiri', serif; font-size: 1.3rem; color: var(--primary); flex: 1; }
+  .details-x {
+    background: none; border: none; font-size: 1.3rem; cursor: pointer; color: #888;
+    width: 34px; height: 34px; border-radius: 50%;
+  }
+  .details-x:hover { background: #eee; color: #333; }
+  .details-body { padding: 18px 22px 8px; overflow-y: auto; flex: 1; }
+  .details-section { margin-bottom: 20px; }
+  .details-section-title {
+    font-weight: 700; color: var(--primary); font-size: 0.95rem;
+    padding-bottom: 6px; margin-bottom: 12px; border-bottom: 1.5px dashed #d9d2bd;
+  }
+  .details-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px 18px; }
+  .d-field.full { grid-column: 1 / -1; }
+  .d-field label { display: block; font-size: 0.76rem; font-weight: 700; color: #777; margin-bottom: 4px; }
+  .d-val {
+    font-size: 0.98rem; font-weight: 600; color: var(--text-dark); background: #f7f7f5;
+    padding: 8px 12px; border-radius: 6px; min-height: 38px; word-break: break-word;
+  }
+  .d-val.ltr { direction: ltr; text-align: right; }
+  .d-empty { color: #bbb; font-weight: 400; font-size: 0.85rem; }
+  .d-field input, .d-field select {
+    width: 100%; padding: 8px 12px; border: 2px solid #ddd; border-radius: 6px;
+    font-family: 'Cairo', sans-serif; font-size: 0.95rem; background: white; min-height: 38px;
+  }
+  .d-field input:focus, .d-field select:focus { outline: none; border-color: var(--primary); }
+  .d-field input.ltr { direction: ltr; text-align: right; }
+  .d-field.changed input, .d-field.changed select { border-color: var(--secondary); background: #fffdf5; }
+  .details-warn {
+    background: #fef3e2; border: 1.5px solid #f6c76a; color: #7b4a0a; border-radius: 8px;
+    padding: 9px 14px; font-size: 0.85rem; line-height: 1.7; margin-bottom: 12px;
+  }
+  .details-check { display: flex; align-items: center; gap: 8px; font-size: 0.88rem; margin: 8px 0; cursor: pointer; }
+  .details-check input { width: 17px; height: 17px; accent-color: var(--primary); }
+  .details-foot {
+    padding: 14px 22px; border-top: 1px solid #eee; display: flex; gap: 10px;
+    flex-wrap: wrap; background: #fafafa;
+  }
+  .btn-d {
+    border: none; padding: 10px 22px; border-radius: 8px; font-family: 'Cairo', sans-serif;
+    font-weight: 700; font-size: 0.92rem; cursor: pointer; transition: all 0.2s;
+  }
+  .btn-d.primary { background: var(--primary); color: white; }
+  .btn-d.primary:hover { background: #2c5282; }
+  .btn-d.success { background: var(--success); color: white; }
+  .btn-d.success:hover { background: #1e5c3a; }
+  .btn-d.ghost { background: #eee; color: #444; }
+  .btn-d.ghost:hover { background: #ddd; }
+  .btn-d:disabled { background: #ccc; cursor: not-allowed; }
+  @media (max-width: 600px) { .details-grid { grid-template-columns: 1fr; } }
+
   /* ===== MODALS ===== */
   #delete-modal, #config-modal, #not-found-modal {
     display: none; position: fixed; inset: 0;
@@ -531,6 +608,19 @@
   </div>
 </div>
 
+<!-- Details / Edit Modal -->
+<div id="details-modal">
+  <div class="details-box">
+    <div class="details-head">
+      <h2 id="details-title">تفاصيل الطلب</h2>
+      <span class="print-status" id="details-badge"></span>
+      <button class="details-x" onclick="closeDetails()" title="إغلاق">✕</button>
+    </div>
+    <div class="details-body" id="details-body"></div>
+    <div class="details-foot" id="details-foot"></div>
+  </div>
+</div>
+
 <!-- Config Modal -->
 <div id="config-modal">
   <div class="modal-box">
@@ -550,9 +640,9 @@
 <div id="toast"></div>
 
 <script>
-const HARDCODED_URL = 'https://script.google.com/macros/s/AKfycbyhRx38vZyldIk00h9qMS4RamIhw5SIzLBDANzJqQv0AIkoRPfrVRh0r1N48-62ds7d/exec';
+const HARDCODED_URL = 'https://script.google.com/macros/s/AKfycbwoPUYwIvCo6wk-2dERCUfP1wMJmldtoFHGvqU-2U6Uq7azgZP2_QkmHtmArmavoL2k/exec';
 const DEFAULT_CONFIG = { scriptUrl: HARDCODED_URL };
-let config = JSON.parse(localStorage.getItem('cert_config') || 'null') || {...DEFAULT_CONFIG};
+let config = JSON.parse(localStorage.getItem('cert_config_v2') || 'null') || {...DEFAULT_CONFIG};
 let requests = [], studentDataCache = {}, currentFilter = 'all';
 let currentRequest = null, currentStudentData = null, pendingDeleteNid = null;
 
@@ -675,7 +765,7 @@ function renderList() {
 
     return `<div class="request-card ${printed?'printed':'pending'}">
       <div class="request-num">${i+1}</div>
-      <div class="request-info">
+      <div class="request-info" onclick="openDetails(${req.row_index},'view')" title="عرض التفاصيل">
         <div class="request-name">${name}</div>
         <div class="request-meta"><span>🪪 ${nid}</span><span>📋 ${service}</span><span>🏢 ${inst}</span></div>
         ${dateDisplay ? `<div style="font-size:0.75rem;margin-top:3px;">${dateDisplay}</div>` : ''}
@@ -683,7 +773,9 @@ function renderList() {
       </div>
       <span class="print-status ${printed?'status-printed':'status-pending'}">${printed?'✅ تم':'⏳ لم يطبع'}</span>
       <div class="card-actions">
-        <button class="card-print-btn ${printed?'reprinting':''}" onclick="openCertificate('${nid}')">${printed?'🔁 إعادة طباعة':'🖨️ طباعة'}</button>
+        <button class="card-view-btn" onclick="openDetails(${req.row_index},'view')">👁️ عرض</button>
+        <button class="card-edit-btn" onclick="openDetails(${req.row_index},'edit')">✏️ تعديل</button>
+        <button class="card-print-btn ${printed?'reprinting':''}" onclick="openCertificate('${nid}',${req.row_index})">${printed?'🔁 إعادة طباعة':'🖨️ طباعة'}</button>
         <button class="card-delete-btn" onclick="openDeleteModal('${nid}')">🗑️ حذف</button>
       </div>
     </div>`;
@@ -704,8 +796,8 @@ function setFilter(f,btn) {
   btn.classList.add('active'); renderList();
 }
 
-async function openCertificate(nationalId) {
-  currentRequest = requests.find(r=>r.national_id===nationalId);
+async function openCertificate(nationalId, rowIndex) {
+  currentRequest = requests.find(r => rowIndex ? r.row_index===rowIndex : r.national_id===nationalId);
   if (!currentRequest) return;
 
   const studentData = await getStudentData(nationalId);
@@ -720,7 +812,7 @@ async function openCertificate(nationalId) {
 
   const name        = currentRequest.name || '';
   const birthPlace  = currentRequest.birth_place || '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
-  const rawBirthDate = currentRequest.birth_date || '';
+  const rawBirthDate = String(currentRequest.birth_date || '');
   // استخراج التاريخ فقط (أرقام وفواصل / - .) وتجاهل أي حروف أو نص إضافي
   const birthDateMatch = rawBirthDate.match(/\d{1,4}[\/-]\d{1,2}[\/-]\d{2,4}|\d{1,2}\s*\/\s*\d{1,2}\s*\/\s*\d{2,4}|\d{4}/);
   const birthDate = birthDateMatch ? birthDateMatch[0].trim() : (rawBirthDate.replace(/[^\d\/ \-\.]/g, '').trim() || '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;');
@@ -967,10 +1059,242 @@ ${certEl.outerHTML}
   }
 }
 
+/* ================= عرض / تعديل الطلب ================= */
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const toEnDigits = s => String(s ?? '').replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d));
+
+const DETAIL_SECTIONS = [
+  { title: '👤 البيانات الشخصية', fields: [
+    { key: 'name', label: 'الاسم رباعي', full: true },
+    { key: 'national_id', label: 'الرقم القومي', ltr: true, digits: true },
+    { key: 'gender', label: 'النوع', type: 'select', options: ['ذكر', 'أنثى'] },
+    { key: 'birth_date', label: 'تاريخ الميلاد' },
+    { key: 'birth_place', label: 'محل الميلاد' }
+  ]},
+  { title: '📋 بيانات الطلب', fields: [
+    { key: 'service', label: 'الخدمة المطلوبة', list: true },
+    { key: 'request_institution', label: 'الجهة المقدم إليها', full: true },
+    { key: 'payment_ref', label: 'الرقم المرجعي للإيصال', ltr: true, digits: true },
+    { key: 'payment_reg', label: 'رقم التسجيل بالإيصال', ltr: true, digits: true }
+  ]},
+  { title: '🎓 البيانات الدراسية', study: true, fields: [
+    { key: 'level', label: 'المستوى', list: true },
+    { key: 'department', label: 'الشعبة', list: true },
+    { key: 'study_system', label: 'نظام الدراسة', list: true },
+    { key: 'academic_year', label: 'العام الدراسي', studentOnly: true }
+  ]}
+];
+const STUDY_KEYS = ['level', 'department', 'study_system', 'academic_year'];
+
+let detailsReq = null, detailsStudent = null, detailsMode = 'view', detailsSaving = false;
+
+// يحوّل أي صيغة تاريخ لـ yyyy-mm-dd (أو '' لو مش مفهوم)
+function toISODate(raw) {
+  const s = String(raw ?? '').trim();
+  if (!s) return '';
+  const pad = n => String(n).padStart(2, '0');
+  if (/T\d\d:\d\d.*Z$/.test(s)) { const d = new Date(s); return isNaN(d) ? '' : `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+  let m = s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})$/);
+  if (m) return `${m[1]}-${pad(m[2])}-${pad(m[3])}`;
+  m = s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
+  if (m) return `${m[3]}-${pad(m[2])}-${pad(m[1])}`;
+  return '';
+}
+function fmtBirth(raw) {
+  const iso = toISODate(raw);
+  return iso ? iso.split('-').reverse().join('/') : String(raw ?? '');
+}
+function fmtTimestamp(raw) {
+  if (!raw) return '';
+  const d = new Date(raw);
+  if (isNaN(d)) return String(raw);
+  const p = n => String(n).padStart(2, '0');
+  return `${p(d.getHours())}:${p(d.getMinutes())}  ${p(d.getDate())}/${p(d.getMonth()+1)}/${d.getFullYear()}`;
+}
+function listValues(key) {
+  const vals = requests.map(r => String(r[key] ?? '').trim());
+  if (key !== 'academic_year') Object.values(studentDataCache).forEach(s => s && s[key] && vals.push(String(s[key]).trim()));
+  return [...new Set(vals.filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ar'));
+}
+
+function detailsValue(key) {
+  if (STUDY_KEYS.includes(key)) {
+    if (detailsStudent && detailsStudent[key] != null && String(detailsStudent[key]).trim() !== '') return detailsStudent[key];
+    if (key === 'academic_year') return '';
+  }
+  return detailsReq[key] ?? '';
+}
+
+async function openDetails(rowIndex, mode = 'view') {
+  const req = requests.find(r => r.row_index === rowIndex);
+  if (!req) return;
+  detailsReq = req; detailsMode = mode; detailsStudent = null;
+  document.getElementById('details-modal').classList.add('active');
+  document.getElementById('details-title').textContent = mode === 'edit' ? '✏️ تعديل الطلب' : '👁️ تفاصيل الطلب';
+  document.getElementById('details-badge').style.display = 'none';
+  document.getElementById('details-foot').innerHTML = '';
+  document.getElementById('details-body').innerHTML = `<div style="text-align:center;padding:40px;color:#888"><div class="spinner"></div>جاري التحميل...</div>`;
+  const s = await getStudentData(req.national_id);
+  if (detailsReq !== req) return; // اتقفلت أثناء التحميل
+  detailsStudent = (s && !s.error && Object.keys(s).length) ? s : null;
+  renderDetails();
+}
+
+function setDetailsMode(m) { detailsMode = m; renderDetails(); }
+
+function closeDetails() {
+  if (detailsSaving) return;
+  detailsReq = null; detailsStudent = null;
+  document.getElementById('details-modal').classList.remove('active');
+}
+
+function detailsFieldHTML(f) {
+  const val = detailsValue(f.key);
+  if (detailsMode === 'view') {
+    const shown = f.key === 'birth_date' ? fmtBirth(val) : String(val ?? '');
+    return `<div class="d-field ${f.full ? 'full' : ''}"><label>${f.label}</label>
+      <div class="d-val ${f.ltr ? 'ltr' : ''}">${shown.trim() !== '' ? esc(shown) : '<span class="d-empty">— غير مسجل —</span>'}</div></div>`;
+  }
+  const id = 'df-' + f.key;
+  let input;
+  if (f.type === 'select') {
+    const cur = String(val ?? '').trim();
+    const opts = [...f.options]; if (cur && !opts.includes(cur)) opts.push(cur);
+    input = `<select id="${id}" data-orig="${esc(cur)}"><option value="">— غير محدد —</option>${opts.map(o => `<option value="${esc(o)}" ${o === cur ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select>`;
+  } else if (f.key === 'birth_date') {
+    const iso = toISODate(val);
+    input = iso
+      ? `<input type="date" id="${id}" value="${iso}" data-orig="${iso}">`
+      : `<input type="text" id="${id}" value="${esc(val)}" data-orig="${esc(val)}" placeholder="yyyy-mm-dd">`;
+  } else {
+    input = `<input type="text" id="${id}" value="${esc(val)}" data-orig="${esc(val)}" ${f.list ? `list="dl-${f.key}"` : ''} ${f.ltr ? 'class="ltr" dir="ltr"' : ''} ${f.digits ? 'inputmode="numeric"' : ''}>`;
+  }
+  return `<div class="d-field ${f.full ? 'full' : ''}" id="dw-${f.key}"><label>${f.label}</label>${input}</div>`;
+}
+
+function renderDetails() {
+  const req = detailsReq; if (!req) return;
+  const editing = detailsMode === 'edit';
+  const printed = isPrinted(req);
+
+  document.getElementById('details-title').textContent = editing ? '✏️ تعديل الطلب' : '👁️ تفاصيل الطلب';
+  const badge = document.getElementById('details-badge');
+  badge.style.display = '';
+  badge.className = 'print-status ' + (printed ? 'status-printed' : 'status-pending');
+  badge.textContent = printed ? '✅ تم الطباعة' : '⏳ لم يطبع';
+
+  let html = '';
+  if (!detailsStudent) {
+    html += `<div class="details-warn">⚠️ هذا الطالب <strong>غير مدرج في الشيت الثاني</strong> (بيانات المستويات)، لذلك لن تُطبع له شهادة قبل إضافته. المعروض في الدراسة هو ما سُجل في الطلب نفسه.</div>`;
+  }
+  DETAIL_SECTIONS.forEach(sec => {
+    const fields = sec.fields.filter(f => !(f.studentOnly && !detailsStudent));
+    html += `<div class="details-section"><div class="details-section-title">${sec.title}</div><div class="details-grid">${fields.map(detailsFieldHTML).join('')}</div></div>`;
+  });
+
+  if (!editing) {
+    html += `<div class="details-section"><div class="details-section-title">🕒 بيانات النظام</div><div class="details-grid">
+      <div class="d-field"><label>وقت تقديم الطلب</label><div class="d-val ltr">${esc(fmtTimestamp(req.timestamp)) || '<span class="d-empty">—</span>'}</div></div>
+      <div class="d-field"><label>حالة الطباعة</label><div class="d-val">${esc(req.print_status || 'لم يطبع')}</div></div>
+    </div></div>`;
+  } else {
+    html += `<div class="details-section"><div class="details-section-title">⚙️ خيارات الحفظ</div>`;
+    if (detailsStudent) html += `<label class="details-check"><input type="checkbox" id="opt-update-student" checked> تحديث بيانات الطالب في الشيت الثاني أيضاً (المستوى / الشعبة / نظام الدراسة / العام الدراسي)</label>`;
+    if (printed) html += `<label class="details-check"><input type="checkbox" id="opt-reset-print"> إرجاع حالة الطلب إلى «لم يطبع»</label>`;
+    html += `<div style="font-size:0.78rem;color:#888;margin-top:6px">الحقول المعدّلة يظهر حدّها باللون الذهبي.</div></div>`;
+    ['service', 'level', 'department', 'study_system'].forEach(k => {
+      html += `<datalist id="dl-${k}">${listValues(k).map(v => `<option value="${esc(v)}"></option>`).join('')}</datalist>`;
+    });
+  }
+  document.getElementById('details-body').innerHTML = html;
+
+  if (editing) {
+    document.querySelectorAll('#details-body input[id^="df-"], #details-body select[id^="df-"]').forEach(el => {
+      const mark = () => document.getElementById('dw-' + el.id.slice(3)).classList.toggle('changed', el.value.trim() !== (el.dataset.orig || '').trim());
+      el.addEventListener('input', mark); el.addEventListener('change', mark);
+    });
+    document.getElementById('details-foot').innerHTML = `
+      <button class="btn-d success" id="btn-save-details" onclick="saveDetails()">💾 حفظ التعديلات</button>
+      <button class="btn-d ghost" onclick="setDetailsMode('view')">إلغاء</button>`;
+  } else {
+    document.getElementById('details-foot').innerHTML = `
+      <button class="btn-d primary" onclick="setDetailsMode('edit')">✏️ تعديل البيانات</button>
+      <button class="btn-d success" onclick="previewCertFromDetails()">📄 معاينة الشهادة</button>
+      <button class="btn-d ghost" onclick="closeDetails()" style="margin-right:auto">إغلاق</button>`;
+  }
+}
+
+function previewCertFromDetails() {
+  const req = detailsReq; if (!req) return;
+  closeDetails();
+  openCertificate(req.national_id, req.row_index);
+}
+
+async function saveDetails() {
+  const req = detailsReq; if (!req || detailsSaving) return;
+  const get = (k, digits) => {
+    const el = document.getElementById('df-' + k);
+    if (!el) return '';
+    let v = el.value.trim().replace(/\s+/g, ' ');
+    return digits ? toEnDigits(v).replace(/\s/g, '') : v;
+  };
+  const data = {};
+  DETAIL_SECTIONS.forEach(sec => sec.fields.forEach(f => {
+    if (f.key !== 'academic_year') data[f.key] = get(f.key, f.digits);
+  }));
+
+  if (!data.name) { showToast('❌ الاسم مطلوب', 'error'); return; }
+  if (!/^\d{14}$/.test(data.national_id)) { showToast('❌ الرقم القومي لازم يكون 14 رقم', 'error'); return; }
+
+  const updStudentEl = document.getElementById('opt-update-student');
+  const resetEl = document.getElementById('opt-reset-print');
+  const payload = {
+    row_index: req.row_index,
+    old_nid: req.national_id,
+    data,
+    update_student: !!(updStudentEl && updStudentEl.checked),
+    reset_print: !!(resetEl && resetEl.checked),
+    student: { level: data.level, department: data.department, study_system: data.study_system, academic_year: get('academic_year') }
+  };
+
+  const btn = document.getElementById('btn-save-details');
+  detailsSaving = true; btn.disabled = true; btn.textContent = '⏳ جاري الحفظ...';
+  try {
+    const res = await fetch(config.scriptUrl + '?action=updateRequest&payload=' + encodeURIComponent(JSON.stringify(payload)));
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const text = await res.text();
+    let result;
+    try { result = JSON.parse(text); }
+    catch { throw new Error('السكربت لا يدعم التعديل بعد — انشر نسخة جديدة منه (Deploy → New version)'); }
+    if (!result.success) throw new Error(result.message || 'فشل الحفظ');
+
+    const oldNid = req.national_id;
+    Object.assign(req, data);
+    if (payload.reset_print) req.print_status = 'لم يطبع';
+    delete studentDataCache[oldNid]; delete studentDataCache[data.national_id];
+    if (payload.update_student && detailsStudent) {
+      detailsStudent = { ...detailsStudent, national_id: data.national_id, ...payload.student };
+      studentDataCache[data.national_id] = detailsStudent;
+    } else if (data.national_id !== oldNid) {
+      const s = await getStudentData(data.national_id);
+      detailsStudent = (s && !s.error && Object.keys(s).length) ? s : null;
+    }
+    detailsSaving = false;
+    detailsMode = 'view'; renderDetails(); updateStats(); renderList();
+    showToast('✅ تم حفظ التعديلات' + (result.student_updated ? ' (وبيانات الطالب)' : ''));
+  } catch (err) {
+    detailsSaving = false; btn.disabled = false; btn.textContent = '💾 حفظ التعديلات';
+    showToast('❌ ' + err.message, 'error', 5000);
+  }
+}
+
+document.getElementById('details-modal').addEventListener('click', function (e) { if (e.target === this && detailsMode === 'view') closeDetails(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && detailsReq && detailsMode === 'view') closeDetails(); });
+
 function openConfig() { document.getElementById('cfg-script-url').value=config.scriptUrl||''; document.getElementById('config-modal').classList.add('active'); }
 function saveConfig() {
   config.scriptUrl = document.getElementById('cfg-script-url').value.trim();
-  localStorage.setItem('cert_config', JSON.stringify(config));
+  localStorage.setItem('cert_config_v2', JSON.stringify(config));
   updateUrlDisplay(); closeConfig();
   if (config.scriptUrl) loadRequests();
 }
